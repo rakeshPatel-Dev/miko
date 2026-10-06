@@ -1,0 +1,7 @@
+node_modules/
+.output/
+dist/
+.wxt/
+package-lock.json
+miko.svg
+public/icons/

@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# WXT/Vite build output
+.output/
+dist/
+.wxt/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs and temporary files
+*.log
+coverage/
+tmp/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
