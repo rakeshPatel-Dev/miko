@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --miko-canvas: #f7f8f6;
+  --miko-card: #ffffff;
+  --miko-fg: #1d2924;
+  --miko-muted: #718078;
+  --miko-line: #dfe7e1;
+  --miko-accent: #2f765c;
+  --miko-accent-hover: #256149;
+  --miko-accent-fg: #ffffff;
+  --miko-accent-soft: #e6f2eb;
+  --miko-accent-ring: #b4d5c2;
+  --miko-accent-text: #286449;
+  --miko-danger: #dc2626;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --miko-canvas: #1a1614;
+    --miko-card: #241f1c;
+    --miko-fg: #f5efec;
+    --miko-muted: #a29892;
+    --miko-line: #3a322e;
+    --miko-accent: #6fc49b;
+    --miko-accent-hover: #84d3ab;
+    --miko-accent-fg: #1a1614;
+    --miko-accent-soft: #1f3a2c;
+    --miko-accent-ring: #387654;
+    --miko-accent-text: #9ee0bb;
+    --miko-danger: #f87171;
+  }
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --miko-canvas: #f7f8f6;
+  --miko-card: #ffffff;
+  --miko-fg: #1d2924;
+  --miko-muted: #718078;
+  --miko-line: #dfe7e1;
+  --miko-accent: #2f765c;
+  --miko-accent-hover: #256149;
+  --miko-accent-fg: #ffffff;
+  --miko-accent-soft: #e6f2eb;
+  --miko-accent-ring: #b4d5c2;
+  --miko-accent-text: #286449;
+  --miko-danger: #dc2626;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --miko-canvas: #1a1614;
+  --miko-card: #241f1c;
+  --miko-fg: #f5efec;
+  --miko-muted: #a29892;
+  --miko-line: #3a322e;
+  --miko-accent: #6fc49b;
+  --miko-accent-hover: #84d3ab;
+  --miko-accent-fg: #1a1614;
+  --miko-accent-soft: #1f3a2c;
+  --miko-accent-ring: #387654;
+  --miko-accent-text: #9ee0bb;
+  --miko-danger: #f87171;
+}
+
+body {
+  background-color: var(--miko-canvas);
+  color: var(--miko-fg);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Chrome sizes action popups from their document. Fix the viewport before React mounts
+   so the popup does not resize between the shell and the loaded form. */
+html:has(body.miko-popup),
+body.miko-popup {
+  width: 420px;
+  min-width: 420px;
+  height: 540px;
+  min-height: 540px;
+  margin: 0;
+  overflow: hidden;
+}
+
+body.miko-popup #root {
+  width: 100%;
+  min-height: 100%;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--miko-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
