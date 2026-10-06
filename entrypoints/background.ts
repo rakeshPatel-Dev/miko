@@ -31,6 +31,10 @@ export default defineBackground(() => {
   }
 
   chrome.commands.onCommand.addListener((command) => {
+    if (command === 'open-popup') {
+      chrome.action.openPopup().catch((error) => console.error('Could not open Miko:', error))
+      return
+    }
     if (command === 'quick-save') {
       saveCurrentPage()
     }

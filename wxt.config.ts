@@ -26,6 +26,13 @@ export default defineConfig({
       128: 'icons/icon128.png',
     },
     commands: {
+      'open-popup': {
+        suggested_key: {
+          default: 'Alt+Shift+M',
+          mac: 'Alt+Shift+M',
+        },
+        description: 'Open Miko',
+      },
       'quick-save': {
         suggested_key: {
           default: 'Alt+Shift+S',
