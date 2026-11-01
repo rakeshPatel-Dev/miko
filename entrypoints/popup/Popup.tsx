@@ -158,7 +158,7 @@ export default function Popup() {
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3" aria-live="polite">
+          <div className="miko-scrollbar min-h-0 flex-1 px-3 pb-3" aria-live="polite">
             {loading ? (
               <div className="space-y-2 px-2 pt-2" aria-label="Loading saved links">
                 {[1, 2, 3, 4].map((item) => (

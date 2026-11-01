@@ -15,6 +15,8 @@
   --miko-accent-ring: #b4d5c2;
   --miko-accent-text: #286449;
   --miko-danger: #dc2626;
+  --miko-scroll-thumb: rgba(29, 41, 36, 0.16);
+  --miko-scroll-thumb-hover: rgba(29, 41, 36, 0.32);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -31,6 +33,8 @@
     --miko-accent-ring: #387654;
     --miko-accent-text: #9ee0bb;
     --miko-danger: #f87171;
+    --miko-scroll-thumb: rgba(245, 239, 236, 0.18);
+    --miko-scroll-thumb-hover: rgba(245, 239, 236, 0.34);
   }
 }
 
@@ -48,6 +52,8 @@
   --miko-accent-ring: #b4d5c2;
   --miko-accent-text: #286449;
   --miko-danger: #dc2626;
+  --miko-scroll-thumb: rgba(29, 41, 36, 0.16);
+  --miko-scroll-thumb-hover: rgba(29, 41, 36, 0.32);
 }
 
 :root[data-theme='dark'] {
@@ -107,6 +113,44 @@ textarea {
 :focus-visible {
   outline: 2px solid var(--miko-accent);
   outline-offset: 2px;
+}
+
+/* Minimal, trackless scrollbar that fades up on hover. */
+.miko-scrollbar {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.miko-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.miko-scrollbar::-webkit-scrollbar-track,
+.miko-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.miko-scrollbar::-webkit-scrollbar-thumb {
+  min-height: 32px;
+  border: 3px solid transparent;
+  border-radius: 9999px;
+  background-color: var(--miko-scroll-thumb);
+  background-clip: content-box;
+  transition: background-color 150ms ease;
+}
+
+.miko-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: var(--miko-scroll-thumb-hover);
+}
+
+.miko-scrollbar::-webkit-scrollbar-thumb:hover,
+.miko-scrollbar::-webkit-scrollbar-thumb:active {
+  background-color: var(--miko-scroll-thumb-hover);
+}
+
+.miko-scrollbar::-webkit-scrollbar-button {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
