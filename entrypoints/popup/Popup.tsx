@@ -14,26 +14,53 @@ import { deleteBookmark, getAllBookmarks, updateBookmark } from '../../src/lib/s
 import { filterBookmarks } from '../../src/lib/search'
 import type { Bookmark } from '../../src/types/bookmark'
 import mikoMascot from '../../miko.svg'
-import { differenceInCalendarDays, isToday, isYesterday } from 'date-fns'
+import { differenceInCalendarDays, format, isToday, isYesterday } from 'date-fns'
+
+const DAY_LABEL = "d MMM ''yy, EEEE"
+
+type BookmarkDay = {
+  key: string
+  label: string
+  date: Date
+  items: Bookmark[]
+}
+
+type BookmarkSection = {
+  title: 'Today' | 'Yesterday' | 'This week' | 'Earlier'
+  days: BookmarkDay[]
+}
 
 function groupByDate(bookmarks: Bookmark[]) {
-  const groups = [
-    { title: 'Today', items: [] as Bookmark[] },
-    { title: 'Yesterday', items: [] as Bookmark[] },
-    { title: 'This week', items: [] as Bookmark[] },
-    { title: 'Earlier', items: [] as Bookmark[] },
-  ]
-  const now = new Date()
+  const days = new Map<string, BookmarkDay>()
 
   for (const bookmark of bookmarks) {
     const date = new Date(bookmark.createdAt)
-    if (isToday(date)) groups[0].items.push(bookmark)
-    else if (isYesterday(date)) groups[1].items.push(bookmark)
-    else if (differenceInCalendarDays(now, date) < 7) groups[2].items.push(bookmark)
-    else groups[3].items.push(bookmark)
+    const key = format(date, 'yyyy-MM-dd')
+
+    if (!days.has(key)) {
+      days.set(key, { key, label: format(date, DAY_LABEL), date, items: [] })
+    }
+
+    days.get(key)!.items.push(bookmark)
   }
 
-  return groups.filter((group) => group.items.length > 0)
+  const sortedDays = [...days.values()].sort((a, b) => b.date.getTime() - a.date.getTime())
+  const sections: BookmarkSection[] = [
+    { title: 'Today', days: [] },
+    { title: 'Yesterday', days: [] },
+    { title: 'This week', days: [] },
+    { title: 'Earlier', days: [] },
+  ]
+  const now = new Date()
+
+  for (const day of sortedDays) {
+    if (isToday(day.date)) sections[0].days.push(day)
+    else if (isYesterday(day.date)) sections[1].days.push(day)
+    else if (differenceInCalendarDays(now, day.date) < 7) sections[2].days.push(day)
+    else sections[3].days.push(day)
+  }
+
+  return sections.filter((section) => section.days.length > 0)
 }
 
 export default function Popup() {
@@ -154,107 +181,123 @@ export default function Popup() {
               </div>
             ) : (
               <div className="space-y-4">
-                {groups.map((group) => (
-                  <section key={group.title} aria-label={group.title}>
-                    <h2 className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[.12em] text-muted">
-                      {group.title}
-                    </h2>
-                    <div className="space-y-1">
-                      {group.items.map((bookmark) => (
-                        <div
-                          key={bookmark.id}
-                          className="group flex w-full items-start gap-2 rounded-xl px-3 py-3 text-left transition hover:bg-canvas"
-                        >
-                          {bookmark.favicon ? (
-                            <img
-                              src={bookmark.favicon}
-                              alt=""
-                              className="mt-0.5 h-5 w-5 shrink-0 rounded object-contain"
-                              onError={(event) => {
-                                event.currentTarget.style.display = 'none'
-                              }}
-                            />
-                          ) : (
-                            <span className="mt-0.5 h-5 w-5 shrink-0 rounded bg-accent-soft" />
-                          )}
-                          {editingId === bookmark.id ? (
-                            <div className="min-w-0 flex-1">
-                              <input
-                                autoFocus
-                                value={editTitle}
-                                onChange={(event) => setEditTitle(event.target.value)}
-                                onKeyDown={(event) => {
-                                  if (event.key === 'Enter') saveEdit(bookmark)
-                                  if (event.key === 'Escape') setEditingId(null)
-                                }}
-                                className="w-full rounded-lg border border-accent bg-canvas px-2 py-1 text-sm text-fg outline-none focus:ring-2 focus:ring-accent-ring"
-                              />
-                              <span className="mt-1 block truncate text-xs text-muted">
-                                {bookmark.domain}
-                              </span>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => openBookmark(bookmark)}
-                              className="min-w-0 flex-1 text-left focus:outline-none"
-                            >
-                              <span className="block truncate text-sm font-semibold text-fg">
-                                {bookmark.title}
-                              </span>
-                              <span className="mt-1 block truncate text-xs text-muted">
-                                {bookmark.domain}
-                              </span>
-                            </button>
-                          )}
-                          <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
-                            {editingId === bookmark.id ? (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={() => saveEdit(bookmark)}
-                                  className="rounded-lg p-1.5 text-accent-text hover:bg-accent-soft"
-                                  title="Save title"
-                                  aria-label="Save title"
-                                >
-                                  <Check size={14} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingId(null)}
-                                  className="rounded-lg p-1.5 text-muted hover:bg-line"
-                                  title="Cancel edit"
-                                  aria-label="Cancel edit"
-                                >
-                                  <X size={14} />
-                                </button>
-                              </>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => startEditing(bookmark)}
-                                className="rounded-lg p-1.5 text-muted hover:bg-line hover:text-fg"
-                                title="Edit title"
-                                aria-label={`Edit ${bookmark.title}`}
-                              >
-                                <Pencil size={14} />
-                              </button>
+                {groups.map((group) => {
+                  const showRowDate = group.title === 'Today' || group.title === 'Yesterday'
+                  return (
+                    <section key={group.title} aria-label={group.title}>
+                      <h2 className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[.12em] text-muted">
+                        {group.title}
+                      </h2>
+                      <div className="space-y-3">
+                        {group.days.map((day) => (
+                          <div key={day.key}>
+                            {!showRowDate && (
+                              <h3 className="px-3 pb-1 text-[11px] font-medium text-muted">
+                                {day.label}
+                              </h3>
                             )}
-                            <button
-                              type="button"
-                              onClick={() => removeBookmark(bookmark.id)}
-                              className="rounded-lg p-1.5 text-muted hover:bg-red-500/10 hover:text-danger"
-                              title="Delete bookmark"
-                              aria-label={`Delete ${bookmark.title}`}
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                            <div className="space-y-1">
+                              {day.items.map((bookmark) => (
+                                <div
+                                  key={bookmark.id}
+                                  className="group flex w-full items-start gap-2 rounded-xl px-3 py-3 text-left transition hover:bg-canvas"
+                                >
+                                  {bookmark.favicon ? (
+                                    <img
+                                      src={bookmark.favicon}
+                                      alt=""
+                                      className="mt-0.5 h-5 w-5 shrink-0 rounded object-contain"
+                                      onError={(event) => {
+                                        event.currentTarget.style.display = 'none'
+                                      }}
+                                    />
+                                  ) : (
+                                    <span className="mt-0.5 h-5 w-5 shrink-0 rounded bg-accent-soft" />
+                                  )}
+                                  {editingId === bookmark.id ? (
+                                    <div className="min-w-0 flex-1">
+                                      <input
+                                        autoFocus
+                                        value={editTitle}
+                                        onChange={(event) => setEditTitle(event.target.value)}
+                                        onKeyDown={(event) => {
+                                          if (event.key === 'Enter') saveEdit(bookmark)
+                                          if (event.key === 'Escape') setEditingId(null)
+                                        }}
+                                        className="w-full rounded-lg border border-accent bg-canvas px-2 py-1 text-sm text-fg outline-none focus:ring-2 focus:ring-accent-ring"
+                                      />
+                                      <span className="mt-1 block truncate text-xs text-muted">
+                                        {bookmark.domain}
+                                        {showRowDate ? ` · ${day.label}` : ''}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => openBookmark(bookmark)}
+                                      className="min-w-0 flex-1 text-left focus:outline-none"
+                                    >
+                                      <span className="block truncate text-sm font-semibold text-fg">
+                                        {bookmark.title}
+                                      </span>
+                                      <span className="mt-1 block truncate text-xs text-muted">
+                                        {bookmark.domain}
+                                        {showRowDate ? ` · ${day.label}` : ''}
+                                      </span>
+                                    </button>
+                                  )}
+                                  <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+                                    {editingId === bookmark.id ? (
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={() => saveEdit(bookmark)}
+                                          className="rounded-lg p-1.5 text-accent-text hover:bg-accent-soft"
+                                          title="Save title"
+                                          aria-label="Save title"
+                                        >
+                                          <Check size={14} />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setEditingId(null)}
+                                          className="rounded-lg p-1.5 text-muted hover:bg-line"
+                                          title="Cancel edit"
+                                          aria-label="Cancel edit"
+                                        >
+                                          <X size={14} />
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => startEditing(bookmark)}
+                                        className="rounded-lg p-1.5 text-muted hover:bg-line hover:text-fg"
+                                        title="Edit title"
+                                        aria-label={`Edit ${bookmark.title}`}
+                                      >
+                                        <Pencil size={14} />
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => removeBookmark(bookmark.id)}
+                                      className="rounded-lg p-1.5 text-muted hover:bg-red-500/10 hover:text-danger"
+                                      title="Delete bookmark"
+                                      aria-label={`Delete ${bookmark.title}`}
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                ))}
+                        ))}
+                      </div>
+                    </section>
+                  )
+                })}
               </div>
             )}
           </div>
