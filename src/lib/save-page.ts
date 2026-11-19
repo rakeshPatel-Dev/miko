@@ -1,6 +1,7 @@
 import type { Bookmark } from '../types/bookmark'
 import { addBookmark, findBookmarkByUrl } from './storage'
 import { showPageToast } from './page-toast'
+import { getToastMessages } from './settings'
 
 export type SavePageStatus = 'saved' | 'duplicate'
 
@@ -17,7 +18,7 @@ export async function savePageWithToast(tab: chrome.tabs.Tab): Promise<SavePageR
   const url = tab.url
   if (tab.id == null || !url || !/^https?:\/\//.test(url)) return null
 
-  const existing = await findBookmarkByUrl(url)
+  const [existing, toastMessages] = await Promise.all([findBookmarkByUrl(url), getToastMessages()])
   const bookmark =
     existing ??
     (await addBookmark({
@@ -27,7 +28,7 @@ export async function savePageWithToast(tab: chrome.tabs.Tab): Promise<SavePageR
     }))
 
   await showPageToast(tab.id, {
-    title: existing ? 'Already in Miko' : 'Miko tucked it away ✨',
+    title: existing ? toastMessages.duplicate : toastMessages.saved,
     kind: existing ? 'info' : 'success',
     duration: existing ? 2000 : 2400,
   })
