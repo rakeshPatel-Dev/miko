@@ -43,6 +43,11 @@ async function saveBookmarks(bookmarks: Bookmark[]) {
   await chrome.storage.local.set({ [STORAGE_KEY]: bookmarks })
 }
 
+export async function findBookmarkByUrl(url: string): Promise<Bookmark | undefined> {
+  const bookmarks = await getAllBookmarks()
+  return bookmarks.find((bookmark) => bookmark.url === url)
+}
+
 export async function addBookmark(input: BookmarkCreateInput): Promise<Bookmark> {
   if (!isValidBookmarkUrl(input.url)) throw new Error('Invalid bookmark URL')
   const bookmarks = await getAllBookmarks()
