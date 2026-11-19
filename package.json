@@ -16,6 +16,7 @@
     "postinstall": "wxt prepare"
   },
   "dependencies": {
+    "@cloudlet/toast": "^1.2.0",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",
