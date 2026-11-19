@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   ArrowLeft,
+  Bell,
   Check,
   Keyboard,
   Library,
   Loader2,
   Pencil,
   Plus,
+  RotateCcw,
   Search,
   Settings,
   Trash2,
@@ -15,6 +17,13 @@ import {
 import { deleteBookmark, getAllBookmarks, updateBookmark } from '../../src/lib/storage'
 import { savePageWithToast } from '../../src/lib/save-page'
 import { filterBookmarks } from '../../src/lib/search'
+import {
+  DEFAULT_TOAST_MESSAGES,
+  TOAST_MESSAGE_MAX_LENGTH,
+  getToastMessages,
+  saveToastMessages,
+  type ToastMessages,
+} from '../../src/lib/settings'
 import type { Bookmark } from '../../src/types/bookmark'
 import mikoMascot from '../../miko.svg'
 import { differenceInCalendarDays, format, isToday, isYesterday } from 'date-fns'
@@ -389,9 +398,45 @@ function SettingsScreen({
 }) {
   const saveCommand = commands.find((command) => command.name === 'quick-save')
   const openCommand = commands.find((command) => command.name === 'open-popup')
+  const [toastMessages, setToastMessages] = useState<ToastMessages>(() => ({
+    ...DEFAULT_TOAST_MESSAGES,
+  }))
+  const [toastStatus, setToastStatus] = useState<'idle' | 'saved' | 'error'>('idle')
+
+  useEffect(() => {
+    let active = true
+    getToastMessages().then((messages) => {
+      if (active) setToastMessages(messages)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (toastStatus === 'idle') return
+    const timer = window.setTimeout(() => setToastStatus('idle'), 2200)
+    return () => window.clearTimeout(timer)
+  }, [toastStatus])
 
   const openChromeShortcuts = () => {
     chrome.tabs.create({ url: 'chrome://extensions/shortcuts' })
+  }
+
+  const updateToastMessage = (key: keyof ToastMessages, value: string) => {
+    setToastMessages((current) => ({ ...current, [key]: value }))
+    setToastStatus('idle')
+  }
+
+  const commitToastMessages = async (messages: ToastMessages) => {
+    try {
+      const saved = await saveToastMessages(messages)
+      setToastMessages(saved)
+      setToastStatus('saved')
+    } catch (error) {
+      console.error('Failed to save toast messages:', error)
+      setToastStatus('error')
+    }
   }
 
   return (
@@ -406,10 +451,10 @@ function SettingsScreen({
         </button>
         <div>
           <p className="text-[15px] font-bold">Settings</p>
-          <p className="text-[11px] text-muted">Keyboard shortcuts</p>
+          <p className="text-[11px] text-muted">Shortcuts & messages</p>
         </div>
       </header>
-      <div className="flex-1 px-5 py-5">
+      <div className="miko-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-5">
         <div className="flex items-start gap-3">
           <div className="rounded-xl bg-accent-soft p-2.5 text-accent-text">
             <Keyboard size={18} />
@@ -436,8 +481,92 @@ function SettingsScreen({
           Allowed examples: Alt + Shift + letter or Ctrl + Shift + letter. Ctrl + Alt is not
           supported by Chrome extension commands.
         </p>
+
+        <div className="mt-7 flex items-start gap-3">
+          <div className="rounded-xl bg-accent-soft p-2.5 text-accent-text">
+            <Bell size={18} />
+          </div>
+          <div>
+            <p className="text-sm font-semibold">Toast messages</p>
+            <p className="mt-1 text-xs leading-5 text-muted">
+              The text shown on the page after Miko saves a link.
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 space-y-3">
+          <ToastMessageField
+            label="New bookmark"
+            value={toastMessages.saved}
+            onChange={(value) => updateToastMessage('saved', value)}
+            onCommit={() => commitToastMessages(toastMessages)}
+          />
+          <ToastMessageField
+            label="Already saved"
+            value={toastMessages.duplicate}
+            onChange={(value) => updateToastMessage('duplicate', value)}
+            onCommit={() => commitToastMessages(toastMessages)}
+          />
+        </div>
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => commitToastMessages(toastMessages)}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-fg transition hover:bg-accent-hover"
+          >
+            <Check size={15} /> Save messages
+          </button>
+          <button
+            type="button"
+            onClick={() => commitToastMessages(DEFAULT_TOAST_MESSAGES)}
+            className="flex items-center justify-center gap-2 rounded-xl border border-line bg-canvas px-3 py-2.5 text-sm font-semibold text-fg transition hover:bg-line/60"
+          >
+            <RotateCcw size={14} /> Reset
+          </button>
+        </div>
+        <p
+          className={`mt-2 min-h-4 text-[11px] ${
+            toastStatus === 'error' ? 'text-danger' : 'text-accent-text'
+          }`}
+          aria-live="polite"
+        >
+          {toastStatus === 'saved'
+            ? 'Toast messages saved.'
+            : toastStatus === 'error'
+              ? 'Could not save. Try again.'
+              : ''}
+        </p>
       </div>
     </div>
+  )
+}
+
+function ToastMessageField({
+  label,
+  value,
+  onChange,
+  onCommit,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  onCommit: () => void
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[.12em] text-muted">
+        {label}
+      </span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') onCommit()
+        }}
+        maxLength={TOAST_MESSAGE_MAX_LENGTH}
+        spellCheck={false}
+        className="w-full rounded-xl border border-line bg-canvas px-3 py-2.5 text-sm text-fg outline-none transition placeholder:text-muted/70 focus:border-accent focus:ring-2 focus:ring-accent-ring"
+      />
+    </label>
   )
 }
 
