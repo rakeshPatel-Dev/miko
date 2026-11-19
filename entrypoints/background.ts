@@ -1,24 +1,24 @@
 import { defineBackground } from 'wxt/utils/define-background'
-import { addBookmark } from '../src/lib/storage'
+import { savePageWithToast } from '../src/lib/save-page'
 
 export default defineBackground(() => {
-  async function getActiveTab() {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-    return tab
-  }
+  async function saveCurrentPage(tabFromCommand?: chrome.tabs.Tab) {
+    const tab =
+      tabFromCommand?.id != null
+        ? tabFromCommand
+        : (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]
 
-  async function saveCurrentPage() {
-    const tab = await getActiveTab()
-    if (!tab?.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://')) {
+    if (!tab) {
+      console.warn('[Miko] Quick save: no active tab found')
       return
     }
 
     try {
-      await addBookmark({
-        url: tab.url,
-        title: tab.title || tab.url,
-        favicon: tab.favIconUrl,
-      })
+      const result = await savePageWithToast(tab)
+      if (!result) {
+        console.warn('[Miko] Quick save: this page cannot be saved', tab.url)
+        return
+      }
 
       chrome.action.setBadgeText({ text: '✓' })
       chrome.action.setBadgeBackgroundColor({ color: '#22c55e' })
@@ -26,17 +26,17 @@ export default defineBackground(() => {
         chrome.action.setBadgeText({ text: '' })
       }, 1500)
     } catch (error) {
-      console.error('Failed to save bookmark:', error)
+      console.error('[Miko] Quick save failed:', error)
     }
   }
 
-  chrome.commands.onCommand.addListener((command) => {
+  chrome.commands.onCommand.addListener((command, tab) => {
     if (command === 'open-popup') {
       chrome.action.openPopup().catch((error) => console.error('Could not open Miko:', error))
       return
     }
     if (command === 'quick-save') {
-      saveCurrentPage()
+      saveCurrentPage(tab)
     }
   })
 })
