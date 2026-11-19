@@ -4,13 +4,16 @@ import {
   Check,
   Keyboard,
   Library,
+  Loader2,
   Pencil,
+  Plus,
   Search,
   Settings,
   Trash2,
   X,
 } from 'lucide-react'
 import { deleteBookmark, getAllBookmarks, updateBookmark } from '../../src/lib/storage'
+import { savePageWithToast } from '../../src/lib/save-page'
 import { filterBookmarks } from '../../src/lib/search'
 import type { Bookmark } from '../../src/types/bookmark'
 import mikoMascot from '../../miko.svg'
@@ -71,6 +74,9 @@ export default function Popup() {
   const [editTitle, setEditTitle] = useState('')
   const [screen, setScreen] = useState<'links' | 'settings'>('links')
   const [commands, setCommands] = useState<chrome.commands.Command[]>([])
+  const [activeTab, setActiveTab] = useState<chrome.tabs.Tab | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saveFeedback, setSaveFeedback] = useState<'idle' | 'saved' | 'duplicate'>('idle')
 
   useEffect(() => {
     getAllBookmarks().then((items) => {
@@ -80,8 +86,24 @@ export default function Popup() {
   }, [])
 
   useEffect(() => {
+    chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
+      setActiveTab(tab ?? null)
+    })
+  }, [])
+
+  useEffect(() => {
     if (screen === 'settings') chrome.commands.getAll().then(setCommands)
   }, [screen])
+
+  useEffect(() => {
+    if (saveFeedback === 'idle') return
+    const timer = window.setTimeout(() => setSaveFeedback('idle'), 2400)
+    return () => window.clearTimeout(timer)
+  }, [saveFeedback])
+
+  const activeUrl = activeTab?.url
+  const pageSavable = activeTab?.id != null && !!activeUrl && /^https?:\/\//.test(activeUrl)
+  const canSave = pageSavable && !saving
 
   const results = useMemo(() => filterBookmarks(bookmarks, query).slice(0, 20), [bookmarks, query])
   const groups = useMemo(() => groupByDate(results), [results])
@@ -110,6 +132,36 @@ export default function Popup() {
     setBookmarks((items) => items.filter((item) => item.id !== id))
     setEditingId(null)
   }
+
+  const saveCurrentPage = async () => {
+    const tab = activeTab
+    if (!tab || !canSave) return
+
+    setSaving(true)
+    setSaveFeedback('idle')
+
+    try {
+      const result = await savePageWithToast(tab)
+      if (!result) return
+
+      setBookmarks((items) =>
+        items.some((item) => item.id === result.bookmark.id) ? items : [result.bookmark, ...items],
+      )
+      setSaveFeedback(result.status)
+    } catch (error) {
+      console.error('Failed to save bookmark:', error)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const saveLabel = saving
+    ? 'Saving…'
+    : saveFeedback === 'saved'
+      ? 'Saved to Miko'
+      : saveFeedback === 'duplicate'
+        ? 'Already in Miko'
+        : 'Save current page'
 
   return (
     <main className="flex h-[540px] w-[420px] flex-col overflow-hidden bg-card text-fg">
@@ -156,6 +208,22 @@ export default function Popup() {
                 className="w-full rounded-xl border border-line bg-canvas py-2.5 pl-9 pr-3 text-sm text-fg outline-none transition placeholder:text-muted/70 focus:border-accent focus:ring-2 focus:ring-accent-ring"
               />
             </div>
+            <button
+              type="button"
+              onClick={saveCurrentPage}
+              disabled={!canSave}
+              title={pageSavable ? 'Save this page to Miko' : 'Miko cannot save this page'}
+              className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-3 py-2.5 text-sm font-semibold text-accent-fg transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {saving ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : saveFeedback === 'saved' || saveFeedback === 'duplicate' ? (
+                <Check size={16} />
+              ) : (
+                <Plus size={16} />
+              )}
+              {saveLabel}
+            </button>
           </div>
 
           <div className="miko-scrollbar min-h-0 flex-1 px-3 pb-3" aria-live="polite">
