@@ -5,7 +5,7 @@ export default defineConfig({
     name: 'Miko',
     description: 'A tiny, playful bookmark companion that saves the good stuff from the internet.',
     version: '0.1.0',
-    permissions: ['storage', 'activeTab', 'scripting'],
+    permissions: ['storage', 'activeTab', 'scripting', 'contextMenus'],
     action: {
       default_popup: 'popup.html',
       default_icon: {
@@ -39,6 +39,13 @@ export default defineConfig({
           mac: 'Command+Shift+S',
         },
         description: 'Quick save current page',
+      },
+      'quick-remove': {
+        suggested_key: {
+          default: 'Alt+Shift+R',
+          mac: 'Command+Shift+R',
+        },
+        description: 'Remove current page from Miko',
       },
     },
   },

@@ -397,6 +397,7 @@ function SettingsScreen({
   onBack: () => void
 }) {
   const saveCommand = commands.find((command) => command.name === 'quick-save')
+  const removeCommand = commands.find((command) => command.name === 'quick-remove')
   const openCommand = commands.find((command) => command.name === 'open-popup')
   const [toastMessages, setToastMessages] = useState<ToastMessages>(() => ({
     ...DEFAULT_TOAST_MESSAGES,
@@ -468,6 +469,7 @@ function SettingsScreen({
         </div>
         <div className="mt-5 divide-y divide-line rounded-xl border border-line">
           <ShortcutRow label="Quick save" value={saveCommand?.shortcut} />
+          <ShortcutRow label="Quick remove" value={removeCommand?.shortcut} />
           <ShortcutRow label="Open Miko" value={openCommand?.shortcut} />
         </div>
         <button
@@ -489,7 +491,7 @@ function SettingsScreen({
           <div>
             <p className="text-sm font-semibold">Toast messages</p>
             <p className="mt-1 text-xs leading-5 text-muted">
-              The text shown on the page after Miko saves a link.
+              The text shown on the page after Miko saves or removes a link.
             </p>
           </div>
         </div>
@@ -504,6 +506,18 @@ function SettingsScreen({
             label="Already saved"
             value={toastMessages.duplicate}
             onChange={(value) => updateToastMessage('duplicate', value)}
+            onCommit={() => commitToastMessages(toastMessages)}
+          />
+          <ToastMessageField
+            label="Removed bookmark"
+            value={toastMessages.removed}
+            onChange={(value) => updateToastMessage('removed', value)}
+            onCommit={() => commitToastMessages(toastMessages)}
+          />
+          <ToastMessageField
+            label="Not saved"
+            value={toastMessages.notFound}
+            onChange={(value) => updateToastMessage('notFound', value)}
             onCommit={() => commitToastMessages(toastMessages)}
           />
         </div>

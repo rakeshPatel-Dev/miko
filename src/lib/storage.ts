@@ -87,3 +87,14 @@ export async function deleteBookmark(id: string): Promise<boolean> {
   await saveBookmarks(filtered)
   return true
 }
+
+export async function restoreBookmark(bookmark: Bookmark): Promise<Bookmark> {
+  if (!isValidBookmarkUrl(bookmark.url)) throw new Error('Invalid bookmark URL')
+
+  const bookmarks = await getAllBookmarks()
+  const existing = bookmarks.find((item) => item.url === bookmark.url)
+  if (existing) return existing
+
+  await saveBookmarks([bookmark, ...bookmarks])
+  return bookmark
+}

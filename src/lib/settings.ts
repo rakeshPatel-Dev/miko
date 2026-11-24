@@ -5,11 +5,15 @@ export const TOAST_MESSAGE_MAX_LENGTH = 80
 export interface ToastMessages {
   saved: string
   duplicate: string
+  removed: string
+  notFound: string
 }
 
 export const DEFAULT_TOAST_MESSAGES: ToastMessages = {
   saved: 'Miko tucked it away ✨',
   duplicate: 'Already in Miko',
+  removed: 'Removed from Miko',
+  notFound: 'Not saved in Miko',
 }
 
 interface MikoSettings {
@@ -30,6 +34,8 @@ export function normalizeToastMessages(messages?: Partial<ToastMessages>): Toast
   return {
     saved: normalizeMessage(messages?.saved, DEFAULT_TOAST_MESSAGES.saved),
     duplicate: normalizeMessage(messages?.duplicate, DEFAULT_TOAST_MESSAGES.duplicate),
+    removed: normalizeMessage(messages?.removed, DEFAULT_TOAST_MESSAGES.removed),
+    notFound: normalizeMessage(messages?.notFound, DEFAULT_TOAST_MESSAGES.notFound),
   }
 }
 

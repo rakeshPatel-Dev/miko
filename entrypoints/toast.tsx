@@ -53,11 +53,29 @@ export default defineUnlistedScript(() => {
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (!isPageToastMessage(message)) return
 
+    const action = message.action
+
     controller.show({
       title: message.title,
       kind: message.kind ?? 'success',
       duration: message.duration ?? 2400,
-      attention: 'stack',
+      attention: action ? 'open' : 'stack',
+      ...(action
+        ? {
+            action: {
+              kind: 'command' as const,
+              label: action.label,
+              run: async () => {
+                const response = await chrome.runtime.sendMessage({
+                  type: 'miko:undo-remove',
+                  bookmark: action.bookmark,
+                })
+                if (!response?.ok) throw new Error('Could not restore bookmark')
+              },
+              errorMessage: () => 'Could not restore bookmark',
+            },
+          }
+        : {}),
     })
     sendResponse({ ok: true })
   })
