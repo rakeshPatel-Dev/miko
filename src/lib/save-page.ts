@@ -74,7 +74,7 @@ export async function removePageWithToast(tab: chrome.tabs.Tab): Promise<RemoveP
   await showPageToast(tab.id, {
     title: toastMessages.removed,
     kind: 'success',
-    duration: 6000,
+    duration: 3000,
     action: {
       type: 'undo-remove',
       label: 'Undo',
