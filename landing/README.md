@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Miko landing site
 
-## Getting Started
+Marketing site for Miko, the tiny bookmark companion. Built with
+[Next.js](https://nextjs.org) (App Router), Tailwind CSS, and Motion.
 
-First, run the development server:
+## Local development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Script          | Description              |
+| --------------- | ------------------------ |
+| `npm run dev`   | Start the dev server     |
+| `npm run build` | Production build         |
+| `npm start`     | Serve the production app |
+| `npm run lint`  | Run ESLint               |
 
-## Learn More
+## Environment
 
-To learn more about Next.js, take a look at the following resources:
+Copy `.env.example` to `.env.local` and set the public site URL:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+This value powers canonical URLs, `robots.txt`, and `sitemap.xml`. It
+falls back to `http://localhost:3000` when unset, so set it for every
+production environment.
 
-## Deploy on Vercel
+## Deploying to Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The site lives in `landing/`, so the Vercel project must use it as its
+root:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Import the `rakeshPatel-Dev/miko` repository in Vercel.
+2. Set **Root Directory** to `landing`.
+3. Keep the detected framework as **Next.js**.
+4. Add `NEXT_PUBLIC_SITE_URL` to the Production (and Preview, if
+   wanted) environment variables.
+5. Deploy.
+
+`vercel.json` in this directory pins the framework, uses `npm ci` for
+installs, and adds baseline security and font-cache headers. No other
+build settings are required.
+
+## Store links
+
+Store URLs and CTA labels live in [`lib/landing.ts`](lib/landing.ts).
+
+- **Firefox** is live. Replace the placeholder `FIREFOX_STORE_URL` with
+  the real Add-ons listing URL before launch.
+- **Chrome** is not published yet, so the button renders as a
+  non-interactive "Chrome coming soon" state. Set `href` and
+  `available` there when the listing goes live, then update
+  `components/ui/StoreButtons.tsx` if the button should become a link.
+
+## Structure
+
+- `app/` — layout, page, metadata routes, global styles
+- `components/` — page sections, UI primitives, product previews
+- `lib/` — shared content, helpers, and site config
