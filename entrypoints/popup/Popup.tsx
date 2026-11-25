@@ -17,9 +17,8 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { deleteBookmark, getAllBookmarks, updateBookmark } from '../../src/lib/storage'
+import { deleteBookmark, queryBookmarks, updateBookmark } from '../../src/lib/storage'
 import { savePageWithToast } from '../../src/lib/save-page'
-import { filterBookmarks } from '../../src/lib/search'
 import {
   DEFAULT_TOAST_MESSAGES,
   TOAST_MESSAGE_MAX_LENGTH,
@@ -32,6 +31,7 @@ import mikoMascot from '../../miko.svg'
 import { differenceInCalendarDays, format, isToday, isYesterday } from 'date-fns'
 
 const DAY_LABEL = "d MMM ''yy, EEEE"
+const BOOKMARK_PAGE_SIZE = 20
 const FEEDBACK_ENDPOINT = 'REDACTED_FORM_URL'
 const FEEDBACK_TYPES = [
   {
@@ -94,6 +94,7 @@ function groupByDate(bookmarks: Bookmark[]) {
 
 export default function Popup() {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
+  const [bookmarkCount, setBookmarkCount] = useState(0)
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -103,13 +104,40 @@ export default function Popup() {
   const [activeTab, setActiveTab] = useState<chrome.tabs.Tab | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveFeedback, setSaveFeedback] = useState<'idle' | 'saved' | 'duplicate'>('idle')
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [hasMoreBookmarks, setHasMoreBookmarks] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const latestQuery = useRef(query)
 
   useEffect(() => {
-    getAllBookmarks().then((items) => {
-      setBookmarks(items.sort((a, b) => b.createdAt - a.createdAt))
-      setLoading(false)
-    })
-  }, [])
+    latestQuery.current = query
+    let active = true
+    setLoading(true)
+    setHasMoreBookmarks(false)
+    setLoadingMore(false)
+    const timer = window.setTimeout(() => {
+      queryBookmarks(query, BOOKMARK_PAGE_SIZE)
+        .then(({ bookmarks: items, total, hasMore }) => {
+          if (!active) return
+          setBookmarks(items)
+          setBookmarkCount(total)
+          setHasMoreBookmarks(hasMore)
+          setLoading(false)
+        })
+        .catch((error) => {
+          console.error('Failed to load bookmarks:', error)
+          if (!active) return
+          setBookmarks([])
+          setBookmarkCount(0)
+          setLoading(false)
+        })
+    }, 120)
+
+    return () => {
+      active = false
+      window.clearTimeout(timer)
+    }
+  }, [query, refreshKey])
 
   useEffect(() => {
     chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
@@ -131,7 +159,7 @@ export default function Popup() {
   const pageSavable = activeTab?.id != null && !!activeUrl && /^https?:\/\//.test(activeUrl)
   const canSave = pageSavable && !saving
 
-  const results = useMemo(() => filterBookmarks(bookmarks, query).slice(0, 20), [bookmarks, query])
+  const results = bookmarks
   const groups = useMemo(() => groupByDate(results), [results])
 
   const openBookmark = (bookmark: Bookmark) => {
@@ -148,14 +176,35 @@ export default function Popup() {
     const title = editTitle.trim()
     if (!title) return
     const updated = await updateBookmark({ id: bookmark.id, title })
-    if (updated)
-      setBookmarks((items) => items.map((item) => (item.id === updated.id ? updated : item)))
+    if (updated) setRefreshKey((value) => value + 1)
     setEditingId(null)
   }
 
+  const notifyBookmarksChanged = () => {
+    void chrome.runtime.sendMessage({ type: 'miko:bookmarks-changed' }).catch(() => undefined)
+  }
+
+  const loadMoreBookmarks = async () => {
+    if (loadingMore || !hasMoreBookmarks) return
+
+    const requestQuery = query
+    setLoadingMore(true)
+    try {
+      const page = await queryBookmarks(requestQuery, BOOKMARK_PAGE_SIZE, bookmarks.length)
+      if (latestQuery.current !== requestQuery) return
+      setBookmarks((items) => [...items, ...page.bookmarks])
+      setHasMoreBookmarks(page.hasMore)
+    } catch (error) {
+      console.error('Failed to load more bookmarks:', error)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
   const removeBookmark = async (id: string) => {
-    await deleteBookmark(id)
-    setBookmarks((items) => items.filter((item) => item.id !== id))
+    const removed = await deleteBookmark(id)
+    if (removed) notifyBookmarksChanged()
+    setRefreshKey((value) => value + 1)
     setEditingId(null)
   }
 
@@ -170,9 +219,8 @@ export default function Popup() {
       const result = await savePageWithToast(tab)
       if (!result) return
 
-      setBookmarks((items) =>
-        items.some((item) => item.id === result.bookmark.id) ? items : [result.bookmark, ...items],
-      )
+      if (result.status === 'saved') setRefreshKey((value) => value + 1)
+      if (result.status === 'saved') notifyBookmarksChanged()
       setSaveFeedback(result.status)
     } catch (error) {
       console.error('Failed to save bookmark:', error)
@@ -210,8 +258,12 @@ export default function Popup() {
               </div>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="rounded-lg bg-accent-soft px-2.5 py-1.5 text-[11px] font-semibold text-accent-text">
-                {bookmarks.length}
+              <span
+                className="rounded-lg bg-accent-soft px-2.5 py-1.5 text-[11px] font-semibold text-accent-text"
+                title={`${bookmarkCount} saved bookmarks`}
+                aria-label={`${bookmarkCount} saved bookmarks`}
+              >
+                {bookmarkCount}
               </span>
               <button
                 onClick={() => setScreen('feedback')}
@@ -272,13 +324,13 @@ export default function Popup() {
             ) : results.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center px-6 text-center">
                 <div className="text-muted">
-                  {bookmarks.length === 0 ? <Library size={24} /> : <Search size={24} />}
+                  {bookmarkCount === 0 ? <Library size={24} /> : <Search size={24} />}
                 </div>
                 <p className="mt-3 text-sm font-semibold">
-                  {bookmarks.length === 0 ? 'Nothing saved yet' : 'No links found'}
+                  {bookmarkCount === 0 ? 'Nothing saved yet' : 'No links found'}
                 </p>
                 <p className="mt-1 max-w-[250px] text-xs leading-5 text-muted">
-                  {bookmarks.length === 0
+                  {bookmarkCount === 0
                     ? 'Press Alt + Shift + S on any page to save it instantly.'
                     : 'Try a different search term.'}
                 </p>
@@ -404,11 +456,26 @@ export default function Popup() {
                 })}
               </div>
             )}
+            {!loading && hasMoreBookmarks && (
+              <button
+                type="button"
+                onClick={loadMoreBookmarks}
+                disabled={loadingMore}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-line bg-canvas px-3 py-2.5 text-xs font-semibold text-fg transition hover:bg-line/60 disabled:cursor-wait disabled:opacity-60"
+              >
+                {loadingMore ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <ChevronDown size={14} />
+                )}
+                {loadingMore ? 'Loading more…' : 'Load more bookmarks'}
+              </button>
+            )}
           </div>
 
           <footer className="border-t border-line px-5 py-3 text-center text-[11px] text-muted">
-            {bookmarks.length} {bookmarks.length === 1 ? 'saved link' : 'saved links'} · Alt + Shift
-            + S to save
+            {bookmarkCount} {bookmarkCount === 1 ? 'saved link' : 'saved links'} · Alt + Shift + S
+            to save
           </footer>
         </>
       )}

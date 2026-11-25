@@ -9,10 +9,22 @@ const REMOVE_PAGE_MENU_TITLE = 'Remove from Miko'
 
 export default defineBackground(() => {
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message?.type === 'miko:bookmarks-changed') {
+      void updateActiveTabContextMenu().catch((error) => {
+        console.error('[Miko] Could not update context menu:', error)
+      })
+      return
+    }
+
     if (!isUndoRemoveRequest(message)) return
 
     void restoreBookmark(message.bookmark)
-      .then(() => sendResponse({ ok: true }))
+      .then(() => {
+        void updateActiveTabContextMenu().catch((error) => {
+          console.error('[Miko] Could not update context menu:', error)
+        })
+        sendResponse({ ok: true })
+      })
       .catch((error) => {
         console.error('[Miko] Could not undo removal:', error)
         sendResponse({ ok: false })
@@ -47,6 +59,7 @@ export default defineBackground(() => {
       setTimeout(() => {
         chrome.action.setBadgeText({ text: '' })
       }, 1500)
+      await updateContextMenu(tab)
     } catch (error) {
       console.error('[Miko] Quick save failed:', error)
     }
@@ -68,6 +81,7 @@ export default defineBackground(() => {
       }
 
       if (result.status === 'removed') chrome.action.setBadgeText({ text: '' })
+      await updateContextMenu(tab)
     } catch (error) {
       console.error('[Miko] Quick remove failed:', error)
     }
@@ -130,13 +144,6 @@ export default defineBackground(() => {
   chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
     if (!tab.active || (changeInfo.status !== 'complete' && !changeInfo.url)) return
     void updateContextMenu(tab).catch((error) => {
-      console.error('[Miko] Could not update context menu:', error)
-    })
-  })
-
-  chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName !== 'local' || !changes.miko_bookmarks) return
-    void updateActiveTabContextMenu().catch((error) => {
       console.error('[Miko] Could not update context menu:', error)
     })
   })
