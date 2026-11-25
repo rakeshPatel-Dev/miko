@@ -1,5 +1,6 @@
 import { ChevronDown, ExternalLink } from "lucide-react";
 import { MikoAvatar } from "@/components/ui/MikoAvatar";
+import { StoreButtons } from "@/components/ui/StoreButtons";
 
 const links = [
   { href: "#features", label: "Product", chevron: true },
@@ -42,13 +43,7 @@ export function SiteNav() {
         >
           GitHub <ExternalLink size={14} />
         </a>
-        <a
-          className="inline-flex items-center gap-2 rounded-full border border-ink bg-surface px-[19px] py-3 text-sm font-extrabold transition-[background-color,color,transform] hover:-translate-y-px hover:bg-ink hover:text-canvas max-sm:px-3.5 max-sm:py-2.5 max-sm:text-xs"
-          href="#download"
-        >
-          Add to Chrome
-          <ExternalLink className="hidden size-4 max-sm:block" />
-        </a>
+        <StoreButtons compact hideSecondaryOnMobile />
       </div>
     </nav>
   );

@@ -3,7 +3,8 @@
 import { ArrowRight, Sparkles } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import { ProductStage } from "@/components/ProductStage";
-import { ButtonLink, TextLink } from "@/components/ui/Buttons";
+import { StoreButtons } from "@/components/ui/StoreButtons";
+import { TextLink } from "@/components/ui/Buttons";
 import { LiveDot } from "@/components/ui/LiveDot";
 import { Check, LockKeyhole } from "lucide-react";
 
@@ -79,10 +80,10 @@ export function Hero() {
         </motion.p>
 
         <motion.div
-          className="mt-[34px] flex flex-wrap items-center justify-center gap-6 max-sm:flex-col max-sm:items-stretch max-sm:gap-[18px] lg:justify-start"
+          className="mt-[34px] flex flex-col items-center gap-[18px] lg:items-start"
           variants={item}
         >
-          <ButtonLink href="#download">Add Miko to Chrome</ButtonLink>
+          <StoreButtons className="max-sm:w-full" />
           <TextLink href="#product-demo">
             Try the real UI <ArrowRight className="size-[17px]" />
           </TextLink>

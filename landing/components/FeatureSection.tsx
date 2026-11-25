@@ -55,7 +55,7 @@ export function FeatureSection() {
             <div className="flex min-h-[208px] items-center justify-center">
               <div className="w-full overflow-hidden rounded-[11px] border border-line bg-surface shadow-[0_10px_24px_rgba(29,41,36,0.09)]">
                 <div className="flex items-center gap-[7px] border-b border-line bg-surface-soft px-[13px] py-2.5 text-[11.5px] font-bold text-muted">
-                  <Command size={15} /> Chrome shortcut manager
+                  <Command size={15} /> Browser shortcut manager
                 </div>
                 {proofRows.map((row) => (
                   <div

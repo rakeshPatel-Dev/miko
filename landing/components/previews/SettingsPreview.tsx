@@ -40,7 +40,7 @@ export function SettingsPreview({
           <div className="min-w-0">
             <strong className="block text-[15px] font-black">Shortcuts</strong>
             <p className="mt-1 max-w-[320px] text-[12.5px] leading-normal text-muted">
-              Chrome owns extension keybinds. Change them in Chrome&apos;s shortcut manager.
+              Your browser owns extension keybinds. Change them in its shortcut manager.
             </p>
           </div>
         </div>
@@ -64,7 +64,7 @@ export function SettingsPreview({
           className="mt-3 flex w-full items-center justify-center gap-[7px] rounded-[10px] bg-accent p-[11px] text-[13px] font-extrabold text-white transition-colors hover:bg-accent-hover"
           type="button"
         >
-          <Keyboard size={16} /> Change shortcuts in Chrome <ExternalLink size={14} />
+          <Keyboard size={16} /> Change browser shortcuts <ExternalLink size={14} />
         </button>
 
         <div className="mt-6 flex items-start gap-3">

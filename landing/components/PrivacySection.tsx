@@ -24,7 +24,7 @@ export function PrivacySection() {
           </h2>
           <p className="mb-7 mt-[22px] max-w-[500px] text-[17px] leading-[1.7] text-muted">
             Miko has no backend and no account system. Bookmarks live in IndexedDB, settings live
-            in Chrome&apos;s local storage, and your saved links stay on this device.
+            in your browser&apos;s local storage, and your saved links stay on this device.
           </p>
           <TextLink href="#download">
             Keep your links yours <ArrowRight className="size-[17px]" />

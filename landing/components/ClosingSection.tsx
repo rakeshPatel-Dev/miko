@@ -1,6 +1,6 @@
 "use client";
 
-import { ButtonLink } from "@/components/ui/Buttons";
+import { StoreButtons } from "@/components/ui/StoreButtons";
 import { MikoAvatar } from "@/components/ui/MikoAvatar";
 import { Reveal } from "@/components/ui/Reveal";
 
@@ -29,9 +29,7 @@ export function ClosingSection() {
           Miko is ready whenever the internet gets interesting.
         </p>
         <div className="z-[1]">
-          <ButtonLink external href="https://chrome.google.com/webstore" variant="light">
-            Add Miko to Chrome
-          </ButtonLink>
+          <StoreButtons className="justify-center" tone="dark" />
         </div>
         <span className="z-[1] mt-[17px] text-xs font-bold text-[#c8e8d3]">
           Free to use · local-first · built for curious people

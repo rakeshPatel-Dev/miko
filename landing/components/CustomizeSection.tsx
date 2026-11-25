@@ -27,7 +27,7 @@ export function CustomizeSection() {
             Make the confirmation sound like you.
           </h2>
           <p className="mt-[22px] max-w-[480px] text-[17px] leading-[1.7] text-[#aebfb4]">
-            Open Settings from the popup to choose your Chrome shortcuts and rewrite every message
+            Open Settings from the popup to choose your browser shortcuts and rewrite every message
             Miko shows after an action.
           </p>
 

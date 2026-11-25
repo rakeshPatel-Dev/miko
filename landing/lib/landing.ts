@@ -1,3 +1,19 @@
+// TODO(store): replace with the live Firefox Add-ons listing URL before launch.
+const FIREFOX_STORE_URL = "https://addons.mozilla.org/en-US/firefox/addon/miko/";
+
+export const storeLinks = {
+  firefox: {
+    label: "Add to Firefox",
+    href: FIREFOX_STORE_URL,
+    available: true,
+  },
+  chrome: {
+    label: "Chrome coming soon",
+    href: null,
+    available: false,
+  },
+} as const;
+
 export type ShowcaseTab = "popup" | "settings" | "toast";
 export type ToastKey = "saved" | "duplicate" | "removed" | "notFound";
 export type ToastKind = "success" | "info" | "warning" | "error";
