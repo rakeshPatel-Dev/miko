@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Miko Display";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("/fonts/Baloo2-Variable.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Miko Sans";
+  font-style: normal;
+  font-weight: 200 1000;
+  font-display: swap;
+  src: url("/fonts/Nunito-Variable.ttf") format("truetype");
+}
+
+@theme {
+  --color-canvas: #f7f5ee;
+  --color-surface: #fffefa;
+  --color-surface-soft: #f3f6f0;
+  --color-ink: #1b2a22;
+  --color-muted: #65786e;
+  --color-line: #e2e9e0;
+  --color-accent: #2f7a5d;
+  --color-accent-hover: #256349;
+  --color-accent-soft: #e3f1e8;
+  --color-accent-ring: #b9d9c8;
+  --color-accent-text: #256a4c;
+  --color-blue-soft: #e4eef6;
+  --color-blue-text: #4a708b;
+  --color-peach-soft: #fbe8df;
+  --color-peach-text: #a75f48;
+  --color-yellow-soft: #f9eec4;
+  --color-yellow-text: #8f6f1d;
+  --color-dark: #16251d;
+
+  --font-display: "Miko Display", "Trebuchet MS", ui-rounded, sans-serif;
+  --font-body: "Miko Sans", ui-rounded, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  p {
+    margin: 0;
+  }
+
+  ::selection {
+    background-color: var(--color-accent-soft);
+    color: var(--color-accent-text);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

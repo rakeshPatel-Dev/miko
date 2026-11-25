@@ -11,6 +11,11 @@ dist/
 .env.*
 !.env.example
 
+# Next.js landing site
+.next/
+.vercel/
+*.tsbuildinfo
+
 # Logs and temporary files
 *.log
 coverage/

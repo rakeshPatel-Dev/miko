@@ -1,0 +1,47 @@
+/* These tokens mirror the extension's page toast. The renderer itself comes from @cloudlet/toast. */
+.cloudlet-host {
+  --cloudlet-font-family: "Miko Sans", "Noto Sans", ui-sans-serif, system-ui, sans-serif;
+  --cloudlet-font-size: 15px;
+  --cloudlet-pill-max-width: 460px;
+  --cloudlet-island-max-width: 480px;
+  --cloudlet-background: #241f1c;
+  --cloudlet-foreground: #f5efec;
+  --cloudlet-muted: #c1b5ae;
+  --cloudlet-border: rgba(245, 239, 236, 0.14);
+  --cloudlet-action-background: rgba(245, 239, 236, 0.1);
+  --cloudlet-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.58), 0 2px 5px rgba(0, 0, 0, 0.24);
+  --cloudlet-tail-background: #241f1c;
+  --cloudlet-tail-border: rgba(245, 239, 236, 0.14);
+  --cloudlet-success: #6fc49b;
+  --cloudlet-info: #91bde0;
+  --cloudlet-warning: #f2cc74;
+  --cloudlet-focus: #a6dfbb;
+  --cloudlet-z-index: 2147483646;
+}
+
+.cloudlet-host .cloudlet-heading {
+  gap: 12px;
+  padding-inline: 12px 18px;
+}
+
+.cloudlet-host .cloudlet-title {
+  font-weight: 600;
+}
+
+.cloudlet-host .cloudlet-description {
+  color: var(--cloudlet-muted);
+  font-size: 0.875rem;
+}
+
+.cloudlet-host .cloudlet-action {
+  font-weight: 650;
+}
+
+@media (max-width: 560px) {
+  .cloudlet-host {
+    --cloudlet-pill-max-width: calc(100vw - 28px);
+    --cloudlet-island-max-width: calc(100vw - 28px);
+    --cloudlet-viewport-gutter: 14px;
+    --cloudlet-font-size: 14px;
+  }
+}
