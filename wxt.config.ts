@@ -6,6 +6,7 @@ export default defineConfig({
     description: 'A tiny, playful bookmark companion that saves the good stuff from the internet.',
     version: '0.1.0',
     permissions: ['storage', 'activeTab', 'scripting', 'contextMenus'],
+    host_permissions: ['https://usebasin.com/*'],
     action: {
       default_popup: 'popup.html',
       default_icon: {

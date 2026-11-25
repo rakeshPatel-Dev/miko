@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft,
   Bell,
   Check,
+  ChevronDown,
+  CircleHelp,
   Keyboard,
   Library,
   Loader2,
@@ -10,6 +12,7 @@ import {
   Plus,
   RotateCcw,
   Search,
+  Send,
   Settings,
   Trash2,
   X,
@@ -29,6 +32,20 @@ import mikoMascot from '../../miko.svg'
 import { differenceInCalendarDays, format, isToday, isYesterday } from 'date-fns'
 
 const DAY_LABEL = "d MMM ''yy, EEEE"
+const FEEDBACK_ENDPOINT = 'REDACTED_FORM_URL'
+const FEEDBACK_TYPES = [
+  {
+    value: 'feedback',
+    label: 'Feedback',
+    description: 'Something to improve or clarify',
+  },
+  {
+    value: 'feature',
+    label: 'Feature request',
+    description: 'An idea for what Miko should do next',
+  },
+] as const
+type FeedbackType = (typeof FEEDBACK_TYPES)[number]['value']
 
 type BookmarkDay = {
   key: string
@@ -81,7 +98,7 @@ export default function Popup() {
   const [loading, setLoading] = useState(true)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
-  const [screen, setScreen] = useState<'links' | 'settings'>('links')
+  const [screen, setScreen] = useState<'links' | 'settings' | 'feedback'>('links')
   const [commands, setCommands] = useState<chrome.commands.Command[]>([])
   const [activeTab, setActiveTab] = useState<chrome.tabs.Tab | null>(null)
   const [saving, setSaving] = useState(false)
@@ -176,6 +193,8 @@ export default function Popup() {
     <main className="flex h-[540px] w-[420px] flex-col overflow-hidden bg-card text-fg">
       {screen === 'settings' ? (
         <SettingsScreen commands={commands} onBack={() => setScreen('links')} />
+      ) : screen === 'feedback' ? (
+        <FeedbackScreen onBack={() => setScreen('links')} />
       ) : (
         <>
           <header className="flex items-center justify-between border-b border-line px-5 py-4">
@@ -194,6 +213,14 @@ export default function Popup() {
               <span className="rounded-lg bg-accent-soft px-2.5 py-1.5 text-[11px] font-semibold text-accent-text">
                 {bookmarks.length}
               </span>
+              <button
+                onClick={() => setScreen('feedback')}
+                className="rounded-lg p-2 text-muted transition hover:bg-canvas hover:text-fg"
+                title="Send feedback or request a feature"
+                aria-label="Send feedback or request a feature"
+              >
+                <CircleHelp size={16} />
+              </button>
               <button
                 onClick={() => setScreen('settings')}
                 className="rounded-lg p-2 text-muted transition hover:bg-canvas hover:text-fg"
@@ -386,6 +413,308 @@ export default function Popup() {
         </>
       )}
     </main>
+  )
+}
+
+function FeedbackScreen({ onBack }: { onBack: () => void }) {
+  const [feedbackType, setFeedbackType] = useState<FeedbackType>('feedback')
+  const [message, setMessage] = useState('')
+  const [email, setEmail] = useState('')
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
+  const [statusMessage, setStatusMessage] = useState('')
+
+  const clearError = () => {
+    if (status === 'error') {
+      setStatus('idle')
+      setStatusMessage('')
+    }
+  }
+
+  const showValidationError = () => {
+    setStatus('error')
+    setStatusMessage('Not submitted. Check the highlighted fields and try again.')
+  }
+
+  const submitFeedback = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (status === 'submitting') return
+
+    const form = event.currentTarget
+    if (!form.reportValidity()) {
+      showValidationError()
+      return
+    }
+
+    if (!message.trim()) {
+      setStatus('error')
+      setStatusMessage('Not submitted. Add a little more detail so we know what to improve.')
+      return
+    }
+
+    setStatus('submitting')
+    setStatusMessage('Sending your note…')
+
+    const formData = new FormData(form)
+    formData.set('type', feedbackType === 'feature' ? 'Feature request' : 'Feedback')
+    formData.set('message', message.trim())
+    formData.set('source', 'Miko browser extension')
+
+    try {
+      const response = await fetch(FEEDBACK_ENDPOINT, {
+        method: 'POST',
+        body: formData,
+        credentials: 'omit',
+      })
+
+      if (!response.ok) throw new Error(`Basin returned ${response.status}`)
+
+      setMessage('')
+      setEmail('')
+      setStatus('success')
+      setStatusMessage('Thanks — your note was sent. Basin’s confirmation page is opening too.')
+      void chrome.tabs
+        .create({ url: response.url || FEEDBACK_ENDPOINT })
+        .catch((error) => console.error('Could not open Basin confirmation page:', error))
+    } catch (error) {
+      console.error('Failed to submit feedback:', error)
+      setStatus('error')
+      setStatusMessage('Not submitted. Check your connection and try again.')
+    }
+  }
+
+  const startAnotherNote = () => {
+    setStatus('idle')
+    setStatusMessage('')
+  }
+
+  return (
+    <div className="flex h-full flex-col">
+      <header className="flex items-center gap-3 border-b border-line px-5 py-4">
+        <button
+          type="button"
+          onClick={onBack}
+          className="rounded-lg p-2 text-muted transition hover:bg-canvas hover:text-fg"
+          aria-label="Back to saved links"
+        >
+          <ArrowLeft size={17} />
+        </button>
+        <div>
+          <p className="text-[15px] font-bold">Help & feedback</p>
+          <p className="text-[11px] text-muted">Help shape what Miko becomes</p>
+        </div>
+      </header>
+
+      {status === 'success' ? (
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-8 text-center">
+          <div className="rounded-2xl bg-accent-soft p-3 text-accent-text">
+            <Check size={22} />
+          </div>
+          <p className="mt-4 text-base font-semibold">Thanks for helping Miko grow.</p>
+          <p className="mt-2 max-w-[280px] text-xs leading-5 text-muted">{statusMessage}</p>
+          <button
+            type="button"
+            onClick={startAnotherNote}
+            className="mt-6 flex items-center justify-center gap-2 rounded-xl border border-line bg-canvas px-4 py-2.5 text-sm font-semibold text-fg transition hover:bg-line/60"
+          >
+            Send another note
+          </button>
+        </div>
+      ) : (
+        <div className="miko-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-5">
+          <div className="mb-5 flex items-start gap-3">
+            <div className="rounded-xl bg-accent-soft p-2.5 text-accent-text">
+              <CircleHelp size={18} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">A quick note?</p>
+              <p className="mt-1 text-xs leading-5 text-muted">
+                Share feedback or tell us what you’d love to see next.
+              </p>
+            </div>
+          </div>
+
+          <form
+            action={FEEDBACK_ENDPOINT}
+            method="POST"
+            encType="multipart/form-data"
+            onSubmit={submitFeedback}
+            onInvalid={showValidationError}
+          >
+            <label className="block">
+              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[.12em] text-muted">
+                I’m sharing
+              </span>
+              <FeedbackTypeMenu
+                value={feedbackType}
+                onChange={(value) => {
+                  setFeedbackType(value)
+                  clearError()
+                }}
+              />
+            </label>
+
+            <label className="mt-4 block">
+              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[.12em] text-muted">
+                Your note
+              </span>
+              <textarea
+                name="message"
+                required
+                rows={5}
+                value={message}
+                onChange={(event) => {
+                  setMessage(event.target.value)
+                  clearError()
+                }}
+                placeholder="What should we know?"
+                className="w-full resize-none rounded-xl border border-line bg-canvas px-3 py-2.5 text-sm leading-5 text-fg outline-none transition placeholder:text-muted/70 focus:border-accent focus:ring-2 focus:ring-accent-ring"
+              />
+            </label>
+
+            <label className="mt-4 block">
+              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[.12em] text-muted">
+                Email <span className="font-normal normal-case tracking-normal">(optional)</span>
+              </span>
+              <input
+                type="email"
+                name="email"
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value)
+                  clearError()
+                }}
+                placeholder="If you’d like a reply"
+                className="w-full rounded-xl border border-line bg-canvas px-3 py-2.5 text-sm text-fg outline-none transition placeholder:text-muted/70 focus:border-accent focus:ring-2 focus:ring-accent-ring"
+              />
+            </label>
+
+            <button
+              type="submit"
+              disabled={status === 'submitting'}
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-fg transition hover:bg-accent-hover disabled:cursor-wait disabled:opacity-60"
+            >
+              {status === 'submitting' ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : (
+                <Send size={15} />
+              )}
+              {status === 'submitting' ? 'Sending…' : 'Send note'}
+            </button>
+
+            <p
+              className={`mt-3 min-h-5 text-center text-[11px] leading-5 ${
+                status === 'error'
+                  ? 'text-danger'
+                  : status === 'submitting'
+                    ? 'text-muted'
+                    : 'text-accent-text'
+              }`}
+              aria-live="polite"
+              role="status"
+            >
+              {statusMessage}
+            </p>
+          </form>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function FeedbackTypeMenu({
+  value,
+  onChange,
+}: {
+  value: FeedbackType
+  onChange: (value: FeedbackType) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const selected = FEEDBACK_TYPES.find((option) => option.value === value) ?? FEEDBACK_TYPES[0]
+
+  useEffect(() => {
+    if (!open) return
+
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+
+    document.addEventListener('pointerdown', closeOnOutsidePointer)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePointer)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [open])
+
+  const chooseOption = (nextValue: FeedbackType) => {
+    onChange(nextValue)
+    setOpen(false)
+  }
+
+  return (
+    <div ref={menuRef} className="relative">
+      <input type="hidden" name="type" value={selected.label} />
+      <button
+        type="button"
+        onClick={() => setOpen((isOpen) => !isOpen)}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            setOpen(true)
+          }
+        }}
+        className={`flex w-full items-center justify-between gap-3 rounded-xl border bg-canvas px-3 py-2.5 text-left text-sm text-fg outline-none transition focus:ring-2 focus:ring-accent-ring ${
+          open ? 'border-accent ring-2 ring-accent-ring' : 'border-line hover:border-accent/60'
+        }`}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls="feedback-type-options"
+      >
+        <span>
+          <span className="block font-semibold">{selected.label}</span>
+          <span className="mt-0.5 block text-xs text-muted">{selected.description}</span>
+        </span>
+        <ChevronDown
+          size={16}
+          className={`shrink-0 text-muted transition-transform ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {open && (
+        <div
+          id="feedback-type-options"
+          role="listbox"
+          aria-label="Feedback type"
+          className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 overflow-hidden rounded-xl border border-line bg-card p-1.5 shadow-lg"
+        >
+          {FEEDBACK_TYPES.map((option) => {
+            const isSelected = option.value === value
+            return (
+              <button
+                key={option.value}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                onClick={() => chooseOption(option.value)}
+                className={`flex w-full items-start justify-between gap-3 rounded-lg px-2.5 py-2 text-left transition ${
+                  isSelected ? 'bg-accent-soft' : 'hover:bg-canvas'
+                }`}
+              >
+                <span>
+                  <span className="block text-sm font-semibold text-fg">{option.label}</span>
+                  <span className="mt-0.5 block text-xs text-muted">{option.description}</span>
+                </span>
+                {isSelected && <Check size={15} className="mt-0.5 shrink-0 text-accent-text" />}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
 
