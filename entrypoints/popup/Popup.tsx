@@ -32,7 +32,7 @@ import { differenceInCalendarDays, format, isToday, isYesterday } from 'date-fns
 
 const DAY_LABEL = "d MMM ''yy, EEEE"
 const BOOKMARK_PAGE_SIZE = 20
-const FEEDBACK_ENDPOINT = 'REDACTED_FORM_URL'
+const FEEDBACK_ENDPOINT = import.meta.env.VITE_FEEDBACK_FORM_URL?.trim() ?? ''
 const FEEDBACK_TYPES = [
   {
     value: 'feedback',
@@ -506,6 +506,12 @@ function FeedbackScreen({ onBack }: { onBack: () => void }) {
     event.preventDefault()
     if (status === 'submitting') return
 
+    if (!FEEDBACK_ENDPOINT) {
+      setStatus('error')
+      setStatusMessage('Not submitted. Feedback is not configured for this build.')
+      return
+    }
+
     const form = event.currentTarget
     if (!form.reportValidity()) {
       showValidationError()
@@ -601,7 +607,7 @@ function FeedbackScreen({ onBack }: { onBack: () => void }) {
           </div>
 
           <form
-            action={FEEDBACK_ENDPOINT}
+            action={FEEDBACK_ENDPOINT || undefined}
             method="POST"
             encType="multipart/form-data"
             onSubmit={submitFeedback}
