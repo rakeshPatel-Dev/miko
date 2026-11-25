@@ -53,12 +53,7 @@ build settings are required.
 
 Store URLs and CTA labels live in [`lib/landing.ts`](lib/landing.ts).
 
-- **Firefox** is live. Replace the placeholder `FIREFOX_STORE_URL` with
-  the real Add-ons listing URL before launch.
-- **Chrome** is not published yet, so the button renders as a
-  non-interactive "Chrome coming soon" state. Set `href` and
-  `available` there when the listing goes live, then update
-  `components/ui/StoreButtons.tsx` if the button should become a link.
+- **Firefox** is live and links to the Add-ons listing.
 
 ## Structure
 

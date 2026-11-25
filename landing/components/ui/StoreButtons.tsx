@@ -5,23 +5,19 @@ import { storeLinks } from "@/lib/landing";
 const tones = {
   light: {
     primary: "bg-accent text-white hover:bg-accent-hover",
-    secondary: "border border-ink/15 text-muted",
   },
   dark: {
     primary: "bg-surface text-ink hover:bg-accent-soft hover:text-accent-text",
-    secondary: "border border-white/35 text-[#ddf2e3]",
   },
 } as const;
 
 export function StoreButtons({
   className,
   compact = false,
-  hideSecondaryOnMobile = false,
   tone = "light",
 }: {
   className?: string;
   compact?: boolean;
-  hideSecondaryOnMobile?: boolean;
   tone?: keyof typeof tones;
 }) {
   return (
@@ -39,17 +35,6 @@ export function StoreButtons({
         {storeLinks.firefox.label}
         <ArrowUpRight className={compact ? "size-3.5" : "size-4"} />
       </a>
-      <span
-        aria-disabled="true"
-        className={cx(
-          "inline-flex cursor-default items-center justify-center rounded-full font-extrabold",
-          compact ? "px-4 py-2.5 text-[13px]" : "px-6 py-4 text-[15px]",
-          tones[tone].secondary,
-          hideSecondaryOnMobile && "max-sm:hidden",
-        )}
-      >
-        {storeLinks.chrome.label}
-      </span>
     </div>
   );
 }

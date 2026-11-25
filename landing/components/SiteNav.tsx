@@ -43,7 +43,7 @@ export function SiteNav() {
         >
           GitHub <ExternalLink size={14} />
         </a>
-        <StoreButtons compact hideSecondaryOnMobile />
+        <StoreButtons compact />
       </div>
     </nav>
   );
